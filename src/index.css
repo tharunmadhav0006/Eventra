@@ -6,30 +6,41 @@
   --font-display: "Space Grotesk", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Overriding default Tailwind Slate values with the exact Clean Minimalism palette */
-  --color-slate-50: #F8FAFC;
-  --color-slate-100: #F1F5F9;
-  --color-slate-200: #E2E8F0;
-  --color-slate-300: #CBD5E1;
-  --color-slate-400: #94A3B8;
-  --color-slate-500: #64748B;
-  --color-slate-600: #475569;
-  --color-slate-800: #1E293B;
-  --color-slate-900: #0F172A;
-  --color-slate-950: #090D16;
+  /* Premium Alabaster Cashmere Light Mode & Deep Spruce Midnight Dark Mode Slate */
+  --color-slate-50: #FAF9F6;
+  --color-slate-100: #F3F1EC;
+  --color-slate-200: #ECE8DF;
+  --color-slate-300: #DDD8CA;
+  --color-slate-400: #B5AE9B;
+  --color-slate-500: #8E8672;
+  --color-slate-600: #6C6552;
+  --color-slate-800: #3D382B;
+  --color-slate-900: #232018;
+  --color-slate-950: #0B0F0E;
 
-  /* Overriding default blue palette for Clean Minimalism highlights */
-  --color-blue-50: #EFF6FF;
-  --color-blue-100: #DBEAFE;
-  --color-blue-500: #3B82F6;
-  --color-blue-600: #1E40AF;
-  --color-blue-700: #1E3A8A;
-  --color-blue-800: #1E3A8A;
+  /* Overriding default blue palette with Imperial Emerald / Sage Teal */
+  --color-blue-50: #E6F4F1;
+  --color-blue-100: #CCE9E4;
+  --color-blue-200: #99D3C9;
+  --color-blue-300: #66BEAE;
+  --color-blue-400: #33A894;
+  --color-blue-500: #0F9680;
+  --color-blue-600: #0A7D69;
+  --color-blue-700: #076454;
+  --color-blue-800: #044B3F;
+  --color-blue-900: #02322A;
 
-  /* Overriding default purple for Clean Minimalism AI features */
-  --color-purple-100: #F3E8FF;
-  --color-purple-500: #8B5CF6;
-  --color-purple-600: #7C3AED;
+  /* Overriding default purple palette with Burnished Champagne Gold / Rose Bronze */
+  --color-purple-50: #FDFBF7;
+  --color-purple-100: #FAF2E1;
+  --color-purple-200: #F4E2BE;
+  --color-purple-300: #EED29A;
+  --color-purple-400: #E8C277;
+  --color-purple-500: #DFA841;
+  --color-purple-600: #C08B2D;
+  --color-purple-700: #9F7020;
+  --color-purple-800: #7D5515;
+  --color-purple-900: #5C3C0B;
 }
 
 /* Base modifications to enforce typography and Clean Minimalism */
@@ -51,18 +62,52 @@ h1, h2, h3, h4, .font-display {
 /* Card custom layout refinements */
 .minimal-card {
   background-color: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--color-slate-200);
   border-radius: 1rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .minimal-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 10px 30px -10px rgba(15, 150, 128, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+  transform: translateY(-2px);
+  border-color: var(--color-blue-300);
 }
 
 .dark .minimal-card {
-  background-color: #111827;
-  border-color: #1F2937;
+  background-color: #101514;
+  border-color: var(--color-slate-800);
+}
+.dark .minimal-card:hover {
+  box-shadow: 0 10px 30px -10px rgba(223, 168, 65, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border-color: var(--color-purple-400);
+}
+
+/* Luxury Utilities */
+.luxury-gradient-text {
+  background: linear-gradient(135deg, var(--color-blue-500) 0%, var(--color-purple-500) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.luxury-gradient-bg {
+  background: linear-gradient(135deg, var(--color-blue-600) 0%, var(--color-purple-600) 100%);
+}
+
+.luxury-card-glow {
+  position: relative;
+}
+.luxury-card-glow::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, var(--color-blue-500), var(--color-purple-500));
+  border-radius: 1.05rem;
+  z-index: -1;
+  opacity: 0.15;
+  transition: opacity 0.3s ease;
+}
+.luxury-card-glow:hover::after {
+  opacity: 0.35;
 }
 
 /* Custom scrollbars */
@@ -74,12 +119,12 @@ h1, h2, h3, h4, .font-display {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: var(--color-slate-300);
   border-radius: 4px;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: var(--color-slate-800);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: var(--color-blue-400);
 }

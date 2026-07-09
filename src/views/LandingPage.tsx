@@ -13,7 +13,11 @@ import {
   Lock, 
   MessageSquare,
   Ticket,
-  Calendar
+  Calendar,
+  Sliders,
+  Gem,
+  QrCode,
+  MapPin
 } from "lucide-react";
 
 interface LandingPageProps {
@@ -22,6 +26,51 @@ interface LandingPageProps {
 
 export default function LandingPage({ onStartAuth }: LandingPageProps) {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [selectedDemoEvent, setSelectedDemoEvent] = useState(0);
+  const [ticketTier, setTicketTier] = useState<"Standard" | "VIP Premium" | "Elite Access">("VIP Premium");
+  const [ticketUpgraded, setTicketUpgraded] = useState(false);
+
+  const demoEvents = [
+    {
+      name: "Global AI Solstice Summit",
+      tagline: "Unifying Silicon & Creativity",
+      date: "Oct 24, 2026",
+      location: "Imperial Palace, Tokyo",
+      badgeColor: "bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-900/30",
+      gradient: "from-blue-500/20 via-transparent to-transparent",
+      accentGlow: "shadow-blue-500/20",
+      accentText: "text-blue-600 dark:text-blue-400",
+      accentBg: "bg-blue-600 hover:bg-blue-500",
+      badgeText: "AI ECOSYSTEM COHORT",
+      stats: { entries: "1,240 / 1,500", revenue: "₹4.8M", speakers: "32 Masters" }
+    },
+    {
+      name: "Grand Verdant Charity Gala",
+      tagline: "A Night for Sanctuary Preservation",
+      date: "Nov 12, 2026",
+      location: "Royal Garden Conservatories",
+      badgeColor: "bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-900/30",
+      gradient: "from-purple-500/20 via-transparent to-transparent",
+      accentGlow: "shadow-purple-500/20",
+      accentText: "text-purple-600 dark:text-purple-400",
+      accentBg: "bg-purple-600 hover:bg-purple-500",
+      badgeText: "VERDANT ELITE STEWARDS",
+      stats: { entries: "450 / 500", revenue: "₹12.4M", speakers: "12 VIPs" }
+    },
+    {
+      name: "Acme National Symphony Orchestra",
+      tagline: "Soundscapes of Classic Brilliance",
+      date: "Dec 31, 2026",
+      location: "Symphony Concert Hall, Mumbai",
+      badgeColor: "bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-300 border-blue-100 dark:border-blue-900/20",
+      gradient: "from-blue-600/10 via-transparent to-transparent",
+      accentGlow: "shadow-blue-600/10",
+      accentText: "text-blue-500 dark:text-blue-300",
+      accentBg: "bg-blue-700 hover:bg-blue-600",
+      badgeText: "CREATIVE PATRONS SOCIETY",
+      stats: { entries: "1,850 / 2,000", revenue: "₹8.5M", speakers: "8 Composers" }
+    }
+  ];
 
   const features = [
     {
@@ -192,6 +241,186 @@ export default function LandingPage({ onStartAuth }: LandingPageProps) {
               <span className="font-sans font-bold tracking-tight text-lg">Figma</span>
               <span className="font-sans font-bold tracking-tight text-lg">Linear</span>
               <span className="font-sans font-bold tracking-tight text-lg">Vercel</span>
+            </div>
+          </div>
+
+          {/* EXQUISITE INTERACTIVE EVENT BRANDING & TICKET DESIGN SANDBOX */}
+          <div className="mt-24 max-w-5xl mx-auto text-left">
+            <div className="text-center mb-10">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-purple-600 dark:text-purple-400 font-bold px-3 py-1 bg-purple-500/10 rounded-full">
+                Interactive Design Sandbox
+              </span>
+              <h2 className="text-3xl font-sans font-bold text-slate-900 dark:text-white mt-3 tracking-tight">
+                Design & Experience Your Luxe Event Brand
+              </h2>
+              <p className="text-sm font-sans text-slate-500 dark:text-slate-400 mt-2 max-w-xl mx-auto">
+                Toggle between curated themes to see how our new elegant visual engine and custom holographic passes change dynamic values instantly.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+              {/* Left Sandbox Control Console */}
+              <div className="lg:col-span-5 flex flex-col justify-between p-6 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-900 rounded-2xl shadow-sm">
+                <div>
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Sliders className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-bold">Console Controls</span>
+                  </div>
+
+                  {/* Step 1: Select Event */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-sans font-semibold text-slate-600 dark:text-slate-400 block">
+                      1. Choose Event Theme
+                    </label>
+                    <div className="space-y-2">
+                      {demoEvents.map((evt, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setSelectedDemoEvent(idx)}
+                          className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all text-xs font-sans font-medium
+                            ${selectedDemoEvent === idx
+                              ? "bg-blue-50/50 dark:bg-blue-950/20 border-blue-500/50 text-blue-800 dark:text-blue-300 ring-2 ring-blue-500/5"
+                              : "border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400"}`}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <span className={`w-2 h-2 rounded-full ${idx === 0 ? "bg-blue-500" : idx === 1 ? "bg-purple-500" : "bg-emerald-500"}`} />
+                            <span>{evt.name.split(" ").slice(0, 3).join(" ")}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-400 block">{evt.date.split(",")[0]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Step 2: Set Ticket Tier */}
+                  <div className="mt-6 space-y-3">
+                    <label className="text-xs font-sans font-semibold text-slate-600 dark:text-slate-400 block">
+                      2. Configure Privilege Level
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["Standard", "VIP Premium", "Elite Access"] as const).map((tier) => (
+                        <button
+                          key={tier}
+                          onClick={() => {
+                            setTicketTier(tier);
+                            if (tier !== "Standard") setTicketUpgraded(true);
+                          }}
+                          className={`py-2 px-1.5 rounded-lg border text-center text-[10px] font-sans font-semibold tracking-wider transition-all
+                            ${ticketTier === tier
+                              ? "bg-slate-900 dark:bg-blue-600 border-transparent text-white shadow-sm"
+                              : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+                        >
+                          {tier}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Simulated Revenue Calculator */}
+                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] font-mono tracking-wider text-slate-400 uppercase font-bold">Estimated Conversion</span>
+                    <span className="text-xs font-mono font-bold text-emerald-500 uppercase">Live Active</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-950 rounded-xl text-center">
+                      <span className="text-[9px] font-mono text-slate-400 block">Registrations</span>
+                      <span className="text-xs font-sans font-bold text-slate-800 dark:text-slate-200 block mt-0.5">{demoEvents[selectedDemoEvent].stats.entries.split(" ")[0]}</span>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-950 rounded-xl text-center">
+                      <span className="text-[9px] font-mono text-slate-400 block">Gross Yield</span>
+                      <span className="text-xs font-sans font-bold text-slate-800 dark:text-slate-200 block mt-0.5">
+                        {ticketTier === "Standard" ? "₹1.2M" : ticketTier === "VIP Premium" ? demoEvents[selectedDemoEvent].stats.revenue : "₹18.5M"}
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-950 rounded-xl text-center">
+                      <span className="text-[9px] font-mono text-slate-400 block">Core Scale</span>
+                      <span className="text-xs font-sans font-bold text-slate-800 dark:text-slate-200 block mt-0.5">{demoEvents[selectedDemoEvent].stats.speakers.split(" ")[0]} Speakers</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Holographic Ticket Display */}
+              <div className="lg:col-span-7 flex items-center justify-center p-8 bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-900 rounded-2xl relative overflow-hidden min-h-[360px]">
+                {/* Visual Backdrop Radiance Glow */}
+                <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-tr ${demoEvents[selectedDemoEvent].gradient} rounded-full blur-2xl pointer-events-none transition-all duration-500`} />
+                
+                {/* Premium Ticket Card Shell */}
+                <div 
+                  className={`w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-xl p-6 relative transition-all duration-300
+                    ${ticketTier === "VIP Premium" ? "ring-2 ring-purple-400 dark:ring-purple-500/30" : ticketTier === "Elite Access" ? "ring-2 ring-blue-500 dark:ring-blue-500/40" : ""}`}
+                >
+                  {/* Foil Shimmer Overlays */}
+                  {ticketTier !== "Standard" && (
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-purple-500/5 to-blue-500/5 rounded-2xl pointer-events-none mix-blend-color-dodge animate-pulse" />
+                  )}
+
+                  {/* Header */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 rounded-md bg-slate-900 dark:bg-slate-800 flex items-center justify-center">
+                        <Sparkles className="w-3 h-3 text-purple-400" />
+                      </div>
+                      <span className="text-[10px] font-mono font-bold tracking-widest text-slate-800 dark:text-slate-200 uppercase">
+                        EVENTRA PASS
+                      </span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded border text-[8px] font-mono font-bold tracking-wider uppercase ${demoEvents[selectedDemoEvent].badgeColor}`}>
+                      {ticketTier}
+                    </span>
+                  </div>
+
+                  {/* Title & Tagline */}
+                  <div className="mb-6">
+                    <h4 className="text-base font-sans font-bold text-slate-900 dark:text-white leading-tight">
+                      {demoEvents[selectedDemoEvent].name}
+                    </h4>
+                    <p className="text-[11px] font-sans text-slate-500 dark:text-slate-400 mt-1 italic">
+                      "{demoEvents[selectedDemoEvent].tagline}"
+                    </p>
+                  </div>
+
+                  {/* Location & Time Grid */}
+                  <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-100 dark:border-slate-800/80 mb-6 text-xs">
+                    <div>
+                      <span className="text-[9px] font-mono text-slate-400 uppercase block">Venue Portal</span>
+                      <div className="flex items-center space-x-1 text-slate-700 dark:text-slate-300 font-medium mt-0.5">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                        <span className="truncate">{demoEvents[selectedDemoEvent].location}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-mono text-slate-400 uppercase block">Schedule Date</span>
+                      <div className="flex items-center space-x-1 text-slate-700 dark:text-slate-300 font-medium mt-0.5">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                        <span>{demoEvents[selectedDemoEvent].date}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Holographic QR Codes & ID footer */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] font-mono text-slate-400 uppercase block">Holo Seat claims</span>
+                      <span className="text-sm font-mono font-bold text-slate-800 dark:text-slate-200">
+                        {ticketTier === "Standard" ? "SEC-B / G-4" : ticketTier === "VIP Premium" ? "ROW-A / V-12" : "BOX-01 / ELITE-1"}
+                      </span>
+                      <span className="text-[9px] block font-mono text-slate-400 mt-1 tracking-tight">PASS-ID: #882410-ENTRA</span>
+                    </div>
+
+                    {/* QR Code Icon with luxury glow */}
+                    <div className="flex flex-col items-center">
+                      <div className={`p-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700/80 relative group-hover:scale-105 transition-all shadow-sm
+                        ${ticketTier !== "Standard" ? "border-purple-200 dark:border-purple-900/40 shadow-purple-500/5" : ""}`}
+                      >
+                        <QrCode className={`w-10 h-10 ${ticketTier !== "Standard" ? "text-purple-600 dark:text-purple-400" : "text-slate-600 dark:text-slate-400"}`} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
