@@ -4,6 +4,7 @@ import fs from "fs";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
+import { azureDb, isUsingAzureSql, getAzureError } from "./src/db/azureSqlConnector";
 
 dotenv.config();
 
@@ -12,48 +13,8 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Path to persistent emulation storage representing Azure SQL database state
-const DB_FILE_PATH = path.join(process.cwd(), "src", "data", "azure_db.json");
-
-// Ensure the directory exists
-const dir = path.dirname(DB_FILE_PATH);
-if (!fs.existsSync(dir)) {
-  fs.mkdirSync(dir, { recursive: true });
-}
-
-interface AzureDB {
-  users: any[];
-  organizations: any[];
-  events: any[];
-  tasks: any[];
-  resources: any[];
-  transactions: any[];
-  notifications: any[];
-  auditLogs: any[];
-  vendorBooths: any[];
-  settings: any;
-}
-
-// Initial completely empty state for Azure SQL database to honor the raw production-ready rules
-const INITIAL_DB_STATE: AzureDB = {
-  users: [],
-  organizations: [],
-  events: [],
-  tasks: [],
-  resources: [],
-  transactions: [],
-  notifications: [],
-  auditLogs: [],
-  vendorBooths: [],
-  settings: {
-    webhookUrl: "https://api.acme.com/v1/webhooks/stripe-clearing",
-    keyVaultSecretIdentifier: "https://evt-vault.vault.azure.net/secrets/stripe-secret",
-    isSaved: true
-  }
-};
-
 // Seed records mapped for Microsoft Azure platform demonstration
-const AZURE_SEEDED_DATA: AzureDB = {
+const AZURE_SEEDED_DATA = {
   users: [
     {
       id: "usr-azure-1",
@@ -76,7 +37,7 @@ const AZURE_SEEDED_DATA: AzureDB = {
       date: "2026-08-15",
       time: "09:00",
       venue: "Convention Center Hall A, Bangalore",
-      status: "Upcoming",
+      status: "Upcoming" as any,
       image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&auto=format&fit=crop&q=80",
       organizerId: "org-azure-1",
       attendeesCount: 4120,
@@ -84,21 +45,16 @@ const AZURE_SEEDED_DATA: AzureDB = {
       ticketsSold: 4120,
       ticketCapacity: 5000,
       ticketCategories: [
-        { id: "t-1-1", name: "Azure Executive Pass", price: 1500, capacity: 500, sold: 480, perks: ["All-access Keynote seats", "VIP lounge entry", "Catered luncheon", "1-on-1 speaker meetups"] },
-        { id: "t-1-2", name: "Cloud Architect Pass", price: 450, capacity: 3500, sold: 3140, perks: ["Access to exhibition floor", "Main-stage tracks", "Event badge & kit", "Digital recordings"] },
-        { id: "t-1-3", name: "Developer & Academic Pass", price: 150, capacity: 1000, sold: 500, perks: ["General entry", "Access to community tracks", "Digital badge"] }
+        { id: "t-1-1", name: "Azure Executive Pass", price: 1500, capacity: 500, sold: 480, perks: ["All-access Keynote seats", "VIP lounge entry", "Catered luncheon", "1-on-1 speaker meetups"] }
       ],
       speakers: [
-        { id: "spk-1", name: "Dr. Aris Thorne", title: "Chief AI Scientist", company: "Synthetix Labs", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80", bio: "Pioneering researcher in large model architectures and enterprise generative intelligence." },
-        { id: "spk-2", name: "Sarah Jenkins", title: "VP of Product Strategy", company: "Stripe", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80", bio: "Passionate about building frictionless fintech experiences and scale-invariant global developer platforms." }
+        { id: "spk-1", name: "Dr. Aris Thorne", title: "Chief AI Scientist", company: "Synthetix Labs", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80", bio: "Pioneering researcher in large model architectures and enterprise generative intelligence." }
       ],
       sponsors: [
-        { id: "spon-1", name: "Microsoft Azure", tier: "Platinum", logo: "Microsoft Azure", website: "https://azure.microsoft.com" },
-        { id: "spon-2", name: "Stripe", tier: "Platinum", logo: "Stripe", website: "https://stripe.com" }
+        { id: "spon-1", name: "Microsoft Azure", tier: "Platinum" as any, logo: "Microsoft Azure", website: "https://azure.microsoft.com" }
       ],
       sessions: [
-        { id: "s-1-1", title: "Keynote: Orchestrating the Azure-First Enterprise", description: "Fireside chat and strategic outlook on embedding generative architectures safely.", startTime: "09:00", endTime: "10:30", speakerId: "spk-1", room: "Grand Ball Room" },
-        { id: "s-1-2", title: "Scale-Invariant Payments via Azure SQL database", description: "How Stripe is scaling its multi-currency payment ledgers.", startTime: "11:00", endTime: "12:15", speakerId: "spk-2", room: "Main Hall A" }
+        { id: "s-1-1", title: "Keynote: Orchestrating the Azure-First Enterprise", description: "Fireside chat and strategic outlook on embedding generative architectures safely.", startTime: "09:00", endTime: "10:30", speakerId: "spk-1", room: "Grand Ball Room" }
       ]
     },
     {
@@ -109,7 +65,7 @@ const AZURE_SEEDED_DATA: AzureDB = {
       date: "2026-07-22",
       time: "18:00",
       venue: "Azure Dev Center, Sector 5 Bangalore",
-      status: "Live",
+      status: "Live" as any,
       image: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=1200&auto=format&fit=crop&q=80",
       organizerId: "org-azure-1",
       attendeesCount: 320,
@@ -123,7 +79,7 @@ const AZURE_SEEDED_DATA: AzureDB = {
         { id: "spk-1", name: "Dr. Aris Thorne", title: "Chief AI Scientist", company: "Synthetix Labs", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80", bio: "Pioneering researcher in large model architectures." }
       ],
       sponsors: [
-        { id: "spon-1", name: "Microsoft Azure", tier: "Platinum", logo: "Microsoft Azure", website: "https://azure.microsoft.com" }
+        { id: "spon-1", name: "Microsoft Azure", tier: "Platinum" as any, logo: "Microsoft Azure", website: "https://azure.microsoft.com" }
       ],
       sessions: [
         { id: "s-2-1", title: "Agentic Engineering Patterns with Azure OpenAI", description: "Advanced session on tool usage, self-correction, and planning behaviors.", startTime: "18:30", endTime: "19:30", speakerId: "spk-1", room: "Garage Stage" }
@@ -131,27 +87,27 @@ const AZURE_SEEDED_DATA: AzureDB = {
     }
   ],
   tasks: [
-    { id: "tsk-azure-1", title: "Audit Azure Blob Storage QR Code Links", assignedTo: "Marcus Chen", roleNeeded: "Volunteer", status: "Pending", dueDate: "2026-07-22", priority: "High", eventId: "evt-azure-2" },
-    { id: "tsk-azure-2", title: "Verify VIP Lounge Catering Ingredients", assignedTo: "Jane Austen", roleNeeded: "Event Manager", status: "In Progress", dueDate: "2026-08-14", priority: "Medium", eventId: "evt-azure-1" }
+    { id: "tsk-azure-1", title: "Audit Azure Blob Storage QR Code Links", assignedTo: "Marcus Chen", roleNeeded: "Volunteer" as any, status: "Pending" as any, dueDate: "2026-07-22", priority: "High" as any, eventId: "evt-azure-2" },
+    { id: "tsk-azure-2", title: "Verify VIP Lounge Catering Ingredients", assignedTo: "Jane Austen", roleNeeded: "Event Manager" as any, status: "In Progress" as any, dueDate: "2026-08-14", priority: "Medium" as any, eventId: "evt-azure-1" }
   ],
   resources: [
-    { id: "res-azure-1", name: "Convention Center Hall A", type: "Venue", quantity: 1, status: "Booked", assignedEvent: "evt-azure-1", date: "2026-08-15", cost: 12000 },
-    { id: "res-azure-2", name: "Premium 4K Laser Projectors", type: "Equipment", quantity: 3, status: "Booked", assignedEvent: "evt-azure-1", date: "2026-08-15", cost: 1500 }
+    { id: "res-azure-1", name: "Convention Center Hall A", type: "Venue" as any, quantity: 1, status: "Booked" as any, assignedEvent: "evt-azure-1", date: "2026-08-15", cost: 12000, bookedSessions: [] },
+    { id: "res-azure-2", name: "Premium 4K Laser Projectors", type: "Equipment" as any, quantity: 3, status: "Booked" as any, assignedEvent: "evt-azure-1", date: "2026-08-15", cost: 1500, bookedSessions: [] }
   ],
   transactions: [
-    { id: "tx-azure-1", eventId: "evt-azure-1", eventTitle: "Microsoft Azure Enterprise Summit 2026", buyerName: "Jonathan Miller", buyerEmail: "jon.m@stripe.com", amount: 1500, status: "Success", date: "2026-07-08 14:32", ticketType: "Azure Executive Pass", invoiceNumber: "INV-AZURE-0091" },
-    { id: "tx-azure-2", eventId: "evt-azure-1", eventTitle: "Microsoft Azure Enterprise Summit 2026", buyerName: "Alice Zhang", buyerEmail: "azhang@notion.so", amount: 450, status: "Success", date: "2026-07-09 09:12", ticketType: "Cloud Architect Pass", invoiceNumber: "INV-AZURE-0092" }
+    { id: "tx-azure-1", eventId: "evt-azure-1", eventTitle: "Microsoft Azure Enterprise Summit 2026", buyerName: "Jonathan Miller", buyerEmail: "jon.m@stripe.com", amount: 1500, status: "Success" as any, date: "2026-07-08 14:32", ticketType: "Azure Executive Pass", invoiceNumber: "INV-AZURE-0091" },
+    { id: "tx-azure-2", eventId: "evt-azure-1", eventTitle: "Microsoft Azure Enterprise Summit 2026", buyerName: "Alice Zhang", buyerEmail: "azhang@notion.so", amount: 450, status: "Success" as any, date: "2026-07-09 09:12", ticketType: "Cloud Architect Pass", invoiceNumber: "INV-AZURE-0092" }
   ],
   notifications: [
-    { id: "n-azure-1", title: "Microsoft Entra Verified Sync", description: "Azure AD B2C securely loaded identity context for active sessions.", time: "10 mins ago", type: "success", read: false },
-    { id: "n-azure-2", title: "Azure SQL Connection Pool Active", description: "Enterprise database server instance health is nominal.", time: "1 hour ago", type: "info", read: false }
+    { id: "n-azure-1", title: "Microsoft Entra Verified Sync", description: "Azure AD B2C securely loaded identity context for active sessions.", time: "10 mins ago", type: "success" as any, read: false },
+    { id: "n-azure-2", title: "Azure SQL Connection Pool Active", description: "Enterprise database server instance health is nominal.", time: "1 hour ago", type: "info" as any, read: false }
   ],
   auditLogs: [
-    { id: "al-azure-1", timestamp: "2026-07-09 05:41", user: "manishkumarofficial701@gmail.com", action: "Configured Entra External ID Auth Claims Policy", ip: "13.67.12.190", severity: "info" },
-    { id: "al-azure-2", timestamp: "2026-07-09 04:12", user: "system@azure-entra.com", action: "Azure Key Vault Rotation Completed for JWT signing certificates", ip: "127.0.0.1", severity: "info" }
+    { id: "al-azure-1", timestamp: "2026-07-09 05:41", user: "manishkumarofficial701@gmail.com", action: "Configured Entra External ID Auth Claims Policy", ip: "13.67.12.190", severity: "info" as any },
+    { id: "al-azure-2", timestamp: "2026-07-09 04:12", user: "system@azure-entra.com", action: "Azure Key Vault Rotation Completed for JWT signing certificates", ip: "127.0.0.1", severity: "info" as any }
   ],
   vendorBooths: [
-    { id: "v-azure-1", name: "AI hardware Acceleration Lounge", vendorName: "NVIDIA Corp", boothNumber: "Booth A-12", status: "Assigned", itemsOrdered: 4, paymentStatus: "Paid" }
+    { id: "v-azure-1", name: "AI hardware Acceleration Lounge", vendorName: "NVIDIA Corp", boothNumber: "Booth A-12", status: "Assigned" as any, itemsOrdered: 4, paymentStatus: "Paid" as any }
   ],
   settings: {
     webhookUrl: "https://api.acme.com/v1/webhooks/stripe-clearing",
@@ -159,34 +115,6 @@ const AZURE_SEEDED_DATA: AzureDB = {
     isSaved: true
   }
 };
-
-// Database utility helpers
-function readDB(): AzureDB {
-  try {
-    if (!fs.existsSync(DB_FILE_PATH)) {
-      fs.writeFileSync(DB_FILE_PATH, JSON.stringify(INITIAL_DB_STATE, null, 2));
-      return INITIAL_DB_STATE;
-    }
-    const content = fs.readFileSync(DB_FILE_PATH, "utf-8");
-    // Handle corrupted or empty file
-    if (!content.trim()) {
-      fs.writeFileSync(DB_FILE_PATH, JSON.stringify(INITIAL_DB_STATE, null, 2));
-      return INITIAL_DB_STATE;
-    }
-    return JSON.parse(content);
-  } catch (error) {
-    console.error("Error reading emulator JSON DB:", error);
-    return INITIAL_DB_STATE;
-  }
-}
-
-function writeDB(data: AzureDB) {
-  try {
-    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error("Error writing to emulator JSON DB:", error);
-  }
-}
 
 // Lazy-loaded Gemini AI client to avoid load-time crashes if key is missing
 let aiClient: GoogleGenAI | null = null;
@@ -214,22 +142,31 @@ function getGeminiClient(): GoogleGenAI {
 // -------------------------------------------------------------
 
 // Seeding tool for Azure verification
-app.post("/api/azure/seed", (req, res) => {
-  writeDB(AZURE_SEEDED_DATA);
-  res.json({ message: "Azure SQL Database successfully seeded with standard enterprise records.", data: AZURE_SEEDED_DATA });
+app.post("/api/azure/seed", async (req, res) => {
+  try {
+    await azureDb.seed(AZURE_SEEDED_DATA);
+    res.json({ message: "Azure SQL Database successfully seeded with standard enterprise records.", data: AZURE_SEEDED_DATA });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Seeding failed." });
+  }
 });
 
 // Clears all data to raw empty states
-app.post("/api/azure/clear", (req, res) => {
-  writeDB(INITIAL_DB_STATE);
-  res.json({ message: "Azure SQL Database successfully truncated and cleared to live production-ready empty states.", data: INITIAL_DB_STATE });
+app.post("/api/azure/clear", async (req, res) => {
+  try {
+    await azureDb.clearAll();
+    res.json({ message: "Azure SQL Database successfully truncated and cleared to live production-ready empty states." });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Truncating failed." });
+  }
 });
 
 app.get("/api/health", (req, res) => {
   res.json({ 
     status: "healthy", 
     backend: "Microsoft Azure App Service", 
-    database: "Azure SQL Database", 
+    database: isUsingAzureSql() ? "Active (Microsoft Azure SQL Database)" : "Emulated (Local JSON Database Emulator)", 
+    azureError: getAzureError(),
     keyVault: "Active", 
     entraAuth: "Configured (Microsoft Entra External ID B2C)", 
     blobStorage: "Azure Blob Container",
@@ -238,302 +175,283 @@ app.get("/api/health", (req, res) => {
 });
 
 // Microsoft Entra AD B2C Emulated Credential endpoints
-app.post("/api/auth/register", (req, res) => {
+app.post("/api/auth/register", async (req, res) => {
   const { name, email, password, role, organization } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json({ error: "Missing required registration parameters." });
   }
 
-  const db = readDB();
-  const existing = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (existing) {
-    return res.status(409).json({ error: "An account under this identity already exists in this Azure Active Directory tenant." });
-  }
-
-  // Create organization if optional name provided and doesn't exist
-  let orgId = null;
-  if (organization) {
-    const cleanOrgName = organization.trim();
-    let org = db.organizations.find(o => o.name.toLowerCase() === cleanOrgName.toLowerCase());
-    if (!org) {
-      org = {
-        id: `org-azure-${Math.random().toString().slice(2, 6)}`,
-        name: cleanOrgName,
-        domain: email.split("@")[1] || "enterprise.local",
-        logo_url: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=100&auto=format&fit=crop&q=80"
-      };
-      db.organizations.push(org);
+  try {
+    const existing = await azureDb.findUserByEmail(email);
+    if (existing) {
+      return res.status(409).json({ error: "An account under this identity already exists in this Azure Active Directory tenant." });
     }
-    orgId = org.id;
+
+    const newUser = {
+      id: `usr-azure-${Math.random().toString().slice(2, 8)}`,
+      name,
+      email,
+      role: role || "Organization Admin",
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
+      organization: organization || "Cloud Tech India"
+    };
+
+    await azureDb.createUser(newUser);
+    
+    // Register in logs
+    await azureDb.logAudit({
+      user: email,
+      action: `User identity provisioned on Microsoft Entra External ID. Created tenant schema.`,
+      ip: req.ip || "13.67.12.190",
+      severity: "info"
+    });
+
+    res.json({ message: "Registration successful. Entra claims generated.", user: newUser });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Registration failed." });
   }
-
-  const newUser = {
-    id: `usr-azure-${Math.random().toString().slice(2, 8)}`,
-    name,
-    email,
-    role: role || "Organization Admin",
-    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
-    organization: organization || ""
-  };
-
-  db.users.push(newUser);
-  
-  // Register in logs
-  db.auditLogs.unshift({
-    id: `al-${Math.random().toString().slice(2, 6)}`,
-    timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
-    user: email,
-    action: `User identity provisioned on Microsoft Entra External ID. Created tenant schema.`,
-    ip: req.ip || "13.67.12.190",
-    severity: "info"
-  });
-
-  writeDB(db);
-  res.json({ message: "Registration successful. Entra claims generated.", user: newUser });
 });
 
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required to query Azure Active Directory." });
   }
 
-  const db = readDB();
-  const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  
-  if (!user) {
-    // If database is completely empty and no users exist, we allow standard sandbox login to allow instant entry,
-    // otherwise we strict check user account to offer normal user creation flow
-    if (db.users.length === 0) {
-      // Auto-provision basic test admin for sandbox experience so the user is never locked out of empty state
-      const firstAdmin = {
-        id: "usr-azure-default",
-        name: "Manish Kumar",
-        email: email,
-        role: "Organization Admin",
-        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
-        organization: "Cloud Tech India"
-      };
-      db.users.push(firstAdmin);
-      db.organizations.push({ id: "org-azure-1", name: "Cloud Tech India", domain: email.split("@")[1] });
-      db.auditLogs.unshift({
-        id: `al-azure-init`,
-        timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
-        user: email,
-        action: `Default Azure SQL Administrative identity initialized for first-time session.`,
-        ip: req.ip || "13.67.12.190",
-        severity: "info"
-      });
-      writeDB(db);
-      return res.json({ message: "First-time login auto-provisioned inside Azure AD B2C.", user: firstAdmin });
+  try {
+    const user = await azureDb.findUserByEmail(email);
+    
+    if (!user) {
+      // Auto-provision standard test admin for sandbox experience if database contains no users
+      const allEvents = await azureDb.getEvents();
+      if (allEvents.length === 0) {
+        const firstAdmin = {
+          id: "usr-azure-default",
+          name: "Manish Kumar",
+          email: email,
+          role: "Organization Admin",
+          avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
+          organization: "Cloud Tech India"
+        };
+        await azureDb.createUser(firstAdmin);
+        await azureDb.logAudit({
+          user: email,
+          action: `Default Azure SQL Administrative identity initialized for first-time session.`,
+          ip: req.ip || "13.67.12.190",
+          severity: "info"
+        });
+        return res.json({ message: "First-time login auto-provisioned inside Azure AD B2C.", user: firstAdmin });
+      }
+      return res.status(401).json({ error: "Invalid credentials. Identity not found in Microsoft Entra Active Directory claims." });
     }
-    return res.status(401).json({ error: "Invalid credentials. Identity not found in Microsoft Entra Active Directory claims." });
+
+    // Audit success
+    await azureDb.logAudit({
+      user: email,
+      action: `JWT claim emitted by Microsoft Entra External ID. Secure session active.`,
+      ip: req.ip || "13.67.12.190",
+      severity: "info"
+    });
+
+    res.json({ message: "Login success", user });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Login failed." });
   }
-
-  // Audit success
-  db.auditLogs.unshift({
-    id: `al-${Math.random().toString().slice(2, 6)}`,
-    timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
-    user: email,
-    action: `JWT claim emitted by Microsoft Entra External ID. Secure session active.`,
-    ip: req.ip || "13.67.12.190",
-    severity: "info"
-  });
-  writeDB(db);
-
-  res.json({ message: "Login success", user });
 });
 
 // Event Endpoints
-app.get("/api/events", (req, res) => {
-  const db = readDB();
-  res.json(db.events);
+app.get("/api/events", async (req, res) => {
+  try {
+    const events = await azureDb.getEvents();
+    res.json(events);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post("/api/events", (req, res) => {
-  const db = readDB();
-  const newEvent = req.body;
-  if (!newEvent.id) {
-    newEvent.id = `evt-${Math.random().toString().slice(2, 6)}`;
+app.post("/api/events", async (req, res) => {
+  try {
+    const newEvent = await azureDb.createEvent(req.body);
+
+    await azureDb.logAudit({
+      user: "manishkumarofficial701@gmail.com",
+      action: `Created new event '${newEvent.title}' (Azure SQL write command committed).`,
+      ip: req.ip || "13.67.12.190",
+      severity: "info"
+    });
+
+    res.json(newEvent);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
-  db.events.unshift(newEvent);
-
-  db.auditLogs.unshift({
-    id: `al-${Math.random().toString().slice(2, 6)}`,
-    timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
-    user: "manishkumarofficial701@gmail.com",
-    action: `Created new event '${newEvent.title}' (Azure SQL write command committed).`,
-    ip: req.ip || "13.67.12.190",
-    severity: "info"
-  });
-
-  writeDB(db);
-  res.json(newEvent);
 });
 
 // Tasks Endpoints
-app.get("/api/tasks", (req, res) => {
-  const db = readDB();
-  res.json(db.tasks);
+app.get("/api/tasks", async (req, res) => {
+  try {
+    const tasks = await azureDb.getTasks();
+    res.json(tasks);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post("/api/tasks", (req, res) => {
-  const db = readDB();
-  const newTask = req.body;
-  if (!newTask.id) {
-    newTask.id = `tsk-${Math.random().toString().slice(2, 6)}`;
+app.post("/api/tasks", async (req, res) => {
+  try {
+    const newTask = await azureDb.createTask(req.body);
+    res.json(newTask);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
-  db.tasks.unshift(newTask);
-  writeDB(db);
-  res.json(newTask);
 });
 
-app.put("/api/tasks/:id", (req, res) => {
-  const db = readDB();
-  const { id } = req.params;
-  const index = db.tasks.findIndex(t => t.id === id);
-  if (index !== -1) {
-    db.tasks[index] = { ...db.tasks[index], ...req.body };
-    writeDB(db);
-    return res.json(db.tasks[index]);
+app.put("/api/tasks/:id", async (req, res) => {
+  try {
+    const updated = await azureDb.updateTask(req.params.id, req.body);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
-  res.status(404).json({ error: "Task not found" });
 });
 
 // Resources Endpoints
-app.get("/api/resources", (req, res) => {
-  const db = readDB();
-  res.json(db.resources);
+app.get("/api/resources", async (req, res) => {
+  try {
+    const resources = await azureDb.getResources();
+    res.json(resources);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post("/api/resources", (req, res) => {
-  const db = readDB();
-  const newRes = req.body;
-  if (!newRes.id) {
-    newRes.id = `res-${Math.random().toString().slice(2, 6)}`;
+app.post("/api/resources", async (req, res) => {
+  try {
+    const newRes = await azureDb.createResource(req.body);
+    res.json(newRes);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
-  db.resources.unshift(newRes);
-  writeDB(db);
-  res.json(newRes);
 });
 
-app.put("/api/resources/:id", (req, res) => {
-  const db = readDB();
-  const { id } = req.params;
-  const index = db.resources.findIndex(r => r.id === id);
-  if (index !== -1) {
-    db.resources[index] = { ...db.resources[index], ...req.body };
-    writeDB(db);
-    return res.json(db.resources[index]);
+app.put("/api/resources/:id", async (req, res) => {
+  try {
+    const updated = await azureDb.updateResource(req.params.id, req.body);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
-  res.status(404).json({ error: "Resource not found" });
 });
 
 // Transactions Endpoints
-app.get("/api/transactions", (req, res) => {
-  const db = readDB();
-  res.json(db.transactions);
+app.get("/api/transactions", async (req, res) => {
+  try {
+    const txs = await azureDb.getTransactions();
+    res.json(txs);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post("/api/transactions", (req, res) => {
-  const db = readDB();
-  const newTx = req.body;
-  if (!newTx.id) {
-    newTx.id = `tx-${Math.random().toString().slice(2, 6)}`;
+app.post("/api/transactions", async (req, res) => {
+  try {
+    const newTx = await azureDb.createTransaction(req.body);
+
+    await azureDb.logAudit({
+      user: newTx.buyerEmail || "checkout@stripe.com",
+      action: `Azure SQL database registered transaction ID ${newTx.id}. Emitted webhook signal.`,
+      ip: req.ip || "13.67.12.190",
+      severity: "info"
+    });
+
+    res.json(newTx);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
-  db.transactions.unshift(newTx);
-
-  // Auto increment event revenues & tickets sold
-  const eventIdx = db.events.findIndex(e => e.id === newTx.eventId);
-  if (eventIdx !== -1) {
-    db.events[eventIdx].ticketsSold = (db.events[eventIdx].ticketsSold || 0) + 1;
-    db.events[eventIdx].attendeesCount = (db.events[eventIdx].attendeesCount || 0) + 1;
-    db.events[eventIdx].revenue = (db.events[eventIdx].revenue || 0) + Number(newTx.amount);
-  }
-
-  db.auditLogs.unshift({
-    id: `al-${Math.random().toString().slice(2, 6)}`,
-    timestamp: new Date().toISOString().replace("T", " ").substring(0, 16),
-    user: newTx.buyerEmail || "checkout@stripe.com",
-    action: `Azure SQL database registered transaction ID ${newTx.id}. Emitted webhook signal.`,
-    ip: req.ip || "13.67.12.190",
-    severity: "info"
-  });
-
-  writeDB(db);
-  res.json(newTx);
 });
 
 // Notifications Endpoints
-app.get("/api/notifications", (req, res) => {
-  const db = readDB();
-  res.json(db.notifications);
-});
-
-app.post("/api/notifications", (req, res) => {
-  const db = readDB();
-  const newNotif = req.body;
-  if (!newNotif.id) {
-    newNotif.id = `n-${Math.random().toString().slice(2, 6)}`;
+app.get("/api/notifications", async (req, res) => {
+  try {
+    const notifications = await azureDb.getNotifications();
+    res.json(notifications);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
-  db.notifications.unshift(newNotif);
-  writeDB(db);
-  res.json(newNotif);
 });
 
-app.put("/api/notifications/read-all", (req, res) => {
-  const db = readDB();
-  db.notifications.forEach(n => n.read = true);
-  writeDB(db);
-  res.json({ success: true });
+app.post("/api/notifications", async (req, res) => {
+  try {
+    const newNotif = await azureDb.createNotification(req.body);
+    res.json(newNotif);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put("/api/notifications/read-all", async (req, res) => {
+  try {
+    await azureDb.markAllNotificationsRead();
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Audit Logs Endpoints
-app.get("/api/audit-logs", (req, res) => {
-  const db = readDB();
-  res.json(db.auditLogs);
+app.get("/api/audit-logs", async (req, res) => {
+  try {
+    const logs = await azureDb.getAuditLogs();
+    res.json(logs);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Vendor Booths Endpoints
-app.get("/api/vendors", (req, res) => {
-  const db = readDB();
-  res.json(db.vendorBooths);
+app.get("/api/vendors", async (req, res) => {
+  try {
+    const vendors = await azureDb.getVendors();
+    res.json(vendors);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post("/api/vendors", (req, res) => {
-  const db = readDB();
-  const newBooth = req.body;
-  if (!newBooth.id) {
-    newBooth.id = `v-${Math.random().toString().slice(2, 6)}`;
+app.post("/api/vendors", async (req, res) => {
+  try {
+    const newVendor = await azureDb.createVendor(req.body);
+    res.json(newVendor);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
-  db.vendorBooths.unshift(newBooth);
-  writeDB(db);
-  res.json(newBooth);
 });
 
-app.put("/api/vendors/:id", (req, res) => {
-  const db = readDB();
-  const { id } = req.params;
-  const index = db.vendorBooths.findIndex(v => v.id === id);
-  if (index !== -1) {
-    db.vendorBooths[index] = { ...db.vendorBooths[index], ...req.body };
-    writeDB(db);
-    return res.json(db.vendorBooths[index]);
+app.put("/api/vendors/:id", async (req, res) => {
+  try {
+    const updated = await azureDb.updateVendor(req.params.id, req.body);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
-  res.status(404).json({ error: "Booth not found" });
 });
 
 // Settings Endpoints
-app.get("/api/settings", (req, res) => {
-  const db = readDB();
-  res.json(db.settings);
+app.get("/api/settings", async (req, res) => {
+  try {
+    const settings = await azureDb.getSettings();
+    res.json(settings);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post("/api/settings", (req, res) => {
-  const db = readDB();
-  db.settings = { ...db.settings, ...req.body };
-  writeDB(db);
-  res.json(db.settings);
+app.post("/api/settings", async (req, res) => {
+  try {
+    const updated = await azureDb.saveSettings(req.body);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // AI Assistant endpoint
