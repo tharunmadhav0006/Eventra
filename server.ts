@@ -161,6 +161,10 @@ app.post("/api/azure/clear", async (req, res) => {
 
 const STARTUP_TIME = Date.now();
 
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 app.get("/api/health", (req, res) => {
   res.json({ 
     status: "healthy", 
