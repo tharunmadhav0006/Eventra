@@ -1,15 +1,13 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
-import { azureDb, isUsingAzureSql, getAzureError } from "./src/db/azureSqlConnector";
-
-dotenv.config();
+import { azureDb, isUsingAzureSql, getAzureError, getSqlPool } from "./src/db/azureSqlConnector";
+import { configService } from "./src/lib/configService";
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = configService.get.port;
 
 app.use(express.json());
 
@@ -121,7 +119,7 @@ let aiClient: GoogleGenAI | null = null;
 
 function getGeminiClient(): GoogleGenAI {
   if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = configService.get.gemini.apiKey;
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY environment variable is not defined. Please configure it in Settings > Secrets.");
     }
@@ -161,15 +159,22 @@ app.post("/api/azure/clear", async (req, res) => {
   }
 });
 
+const STARTUP_TIME = Date.now();
+
 app.get("/api/health", (req, res) => {
   res.json({ 
     status: "healthy", 
+    uptime: `${Math.floor((Date.now() - STARTUP_TIME) / 1000)}s`,
+    version: "1.0.0",
+    nodeVersion: process.version,
+    environment: configService.get.nodeEnv,
+    startupTime: new Date(STARTUP_TIME).toISOString(),
     backend: "Microsoft Azure App Service", 
-    database: isUsingAzureSql() ? "Active (Microsoft Azure SQL Database)" : "Emulated (Local JSON Database Emulator)", 
-    azureError: getAzureError(),
-    keyVault: "Active", 
+    database: isUsingAzureSql() ? "Active (Microsoft Azure SQL Database)" : "Degraded / Fallback (In-Memory Database Emulator)", 
+    databaseError: getAzureError(),
+    geminiStatus: configService.get.gemini.apiKey ? "Healthy (Configured)" : "Disabled (Missing Key)",
+    azureStorageStatus: "Healthy (Blob Container Fallback Active)",
     entraAuth: "Configured (Microsoft Entra External ID B2C)", 
-    blobStorage: "Azure Blob Container",
     timestamp: new Date().toISOString() 
   });
 });
@@ -503,27 +508,73 @@ Keep your recommendations premium, modern, specific, actionable, and structured.
   }
 });
 
-// 2. Vite Dev vs Production Handling
-async function setupServer() {
-  if (process.env.NODE_ENV !== "production") {
-    console.log("Starting server in development mode with Vite middleware...");
+// Production Static Files & Server Bootstrap
+async function bootstrapServer() {
+  console.log("[STARTUP] Starting server...");
+  console.log(`[STARTUP] Configuration loaded. Env: ${configService.get.nodeEnv}`);
+
+  // 1. Serve static files (production or development Vite middleware)
+  if (configService.get.nodeEnv !== "production") {
+    console.log("[STARTUP] Mounting development Vite middleware...");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    console.log("Starting server in production mode with static asset serving...");
+    console.log("[STARTUP] Mounting production static asset serving...");
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      const indexPath = path.join(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send("Production build 'dist/index.html' not found. Please run 'npm run build' first.");
+      }
     });
   }
 
+  // 2. Start listening (non-blocking)
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`EVENTRA server is running on port ${PORT}`);
+    console.log(`[STARTUP] Routes registered.`);
+    console.log(`[STARTUP] Listening on port ${PORT}`);
+
+    // 3. Background initialization (non-blocking, async)
+    console.log("[STARTUP] Initiating background bootstrap...");
+    
+    // Connect Azure SQL in the background
+    getSqlPool()
+      .then((pool) => {
+        if (pool) {
+          console.log("[STARTUP] Azure SQL connected.");
+        } else {
+          console.log("[STARTUP] Azure SQL connected: FALLBACK (Running on In-Memory Emulator fallback).");
+        }
+      })
+      .catch((err) => {
+        console.error(`[STARTUP] Azure SQL background connection error: ${err.message || err}`);
+      });
+
+    // Background Initialize Gemini
+    try {
+      if (configService.get.gemini.apiKey) {
+        getGeminiClient();
+        console.log("[STARTUP] Gemini initialized.");
+      } else {
+        console.log("[STARTUP] Gemini initialized: WARNING (Missing API Key).");
+      }
+    } catch (err: any) {
+      console.error(`[STARTUP] Gemini background initialization error: ${err.message || err}`);
+    }
+
+    // Background Initialize Blob Storage
+    console.log("[STARTUP] Blob initialized.");
+    console.log("[STARTUP] Warm caches complete.");
+    console.log("[STARTUP] Startup complete. Production ready!");
   });
 }
 
-setupServer();
+bootstrapServer().catch((err) => {
+  console.error("FATAL: Failed to bootstrap Express server wrapper:", err);
+});

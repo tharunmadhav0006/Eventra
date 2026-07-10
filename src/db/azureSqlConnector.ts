@@ -1,12 +1,6 @@
 import mssql from "mssql";
-import fs from "fs";
-import path from "path";
-import dotenv from "dotenv";
 import { EventItem, TaskItem, ResourceBooking, Transaction, NotificationItem, AuditLog, VendorBooth } from "../types";
-
-dotenv.config();
-
-const DB_FILE_PATH = path.join(process.cwd(), "src", "data", "azure_db.json");
+import { configService } from "../lib/configService";
 
 // Define Azure Database interface
 interface AzureDB {
@@ -23,15 +17,100 @@ interface AzureDB {
 }
 
 const INITIAL_DB_STATE: AzureDB = {
-  users: [],
-  organizations: [],
-  events: [],
-  tasks: [],
-  resources: [],
-  transactions: [],
-  notifications: [],
-  auditLogs: [],
-  vendorBooths: [],
+  users: [
+    {
+      id: "usr-azure-1",
+      name: "Manish Kumar",
+      email: "manishkumarofficial701@gmail.com",
+      role: "Organization Admin",
+      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
+      organization: "Cloud Tech India"
+    }
+  ],
+  organizations: [
+    { id: "org-azure-1", name: "Cloud Tech India", domain: "cloudtech.in", logo_url: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=100&auto=format&fit=crop&q=80" }
+  ],
+  events: [
+    {
+      id: "evt-azure-1",
+      title: "Microsoft Azure Enterprise Summit 2026",
+      description: "The premier gathering for Fortune 500 cloud architects, AI engineers, and DevOps leaders.",
+      longDescription: "Join 5,000+ cloud technology leaders and enterprise engineers for two intensive days of keynote addresses, hands-on workshops, and deep technical roundtables. Discover how state-of-the-art foundation models and Microsoft Entra ID are reshaping identity security, cloud intelligence, and enterprise microservices.",
+      date: "2026-08-15",
+      time: "09:00",
+      venue: "Convention Center Hall A, Bangalore",
+      status: "Upcoming" as any,
+      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&auto=format&fit=crop&q=80",
+      organizerId: "org-azure-1",
+      attendeesCount: 4120,
+      revenue: 495000,
+      ticketsSold: 4120,
+      ticketCapacity: 5000,
+      ticketCategories: [
+        { id: "t-1-1", name: "Azure Executive Pass", price: 1500, capacity: 500, sold: 480, perks: ["All-access Keynote seats", "VIP lounge entry", "Catered luncheon", "1-on-1 speaker meetups"] }
+      ],
+      speakers: [
+        { id: "spk-1", name: "Dr. Aris Thorne", title: "Chief AI Scientist", company: "Synthetix Labs", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80", bio: "Pioneering researcher in large model architectures and enterprise generative intelligence." }
+      ],
+      sponsors: [
+        { id: "spon-1", name: "Microsoft Azure", tier: "Platinum" as any, logo: "Microsoft Azure", website: "https://azure.microsoft.com" }
+      ],
+      sessions: [
+        { id: "s-1-1", title: "Keynote: Orchestrating the Azure-First Enterprise", description: "Fireside chat and strategic outlook on embedding generative architectures safely.", startTime: "09:00", endTime: "10:30", speakerId: "spk-1", room: "Grand Ball Room" }
+      ]
+    },
+    {
+      id: "evt-azure-2",
+      title: "Intelligent Agent & Azure Cosmos Hackathon",
+      description: "Build the future of autonomous agentic solutions using modern multi-agent systems and Cosmos DB.",
+      longDescription: "A 48-hour continuous sprint bringing together elite software engineers, product designers, and AI researchers to conceptualize, train, and ship production-ready cognitive workflows on Microsoft Azure App Service.",
+      date: "2026-07-22",
+      time: "18:00",
+      venue: "Azure Dev Center, Sector 5 Bangalore",
+      status: "Live" as any,
+      image: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=1200&auto=format&fit=crop&q=80",
+      organizerId: "org-azure-1",
+      attendeesCount: 320,
+      revenue: 16000,
+      ticketsSold: 320,
+      ticketCapacity: 350,
+      ticketCategories: [
+        { id: "t-2-1", name: "Hacker Pass", price: 50, capacity: 300, sold: 290, perks: ["Free APIs", "48hr catering & drinks", "T-shirt & stickers", "Mentorship sessions"] }
+      ],
+      speakers: [
+        { id: "spk-1", name: "Dr. Aris Thorne", title: "Chief AI Scientist", company: "Synthetix Labs", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80", bio: "Pioneering researcher in large model architectures." }
+      ],
+      sponsors: [
+        { id: "spon-1", name: "Microsoft Azure", tier: "Platinum" as any, logo: "Microsoft Azure", website: "https://azure.microsoft.com" }
+      ],
+      sessions: [
+        { id: "s-2-1", title: "Agentic Engineering Patterns with Azure OpenAI", description: "Advanced session on tool usage, self-correction, and planning behaviors.", startTime: "18:30", endTime: "19:30", speakerId: "spk-1", room: "Garage Stage" }
+      ]
+    }
+  ],
+  tasks: [
+    { id: "tsk-azure-1", title: "Audit Azure Blob Storage QR Code Links", assignedTo: "Marcus Chen", roleNeeded: "Volunteer" as any, status: "Pending" as any, dueDate: "2026-07-22", priority: "High" as any, eventId: "evt-azure-2" },
+    { id: "tsk-azure-2", title: "Verify VIP Lounge Catering Ingredients", assignedTo: "Jane Austen", roleNeeded: "Event Manager" as any, status: "In Progress" as any, dueDate: "2026-08-14", priority: "Medium" as any, eventId: "evt-azure-1" }
+  ],
+  resources: [
+    { id: "res-azure-1", name: "Convention Center Hall A", type: "Venue" as any, quantity: 1, status: "Booked" as any, assignedEvent: "evt-azure-1", date: "2026-08-15", cost: 12000, bookedSessions: [] },
+    { id: "res-azure-2", name: "Premium 4K Laser Projectors", type: "Equipment" as any, quantity: 3, status: "Booked" as any, assignedEvent: "evt-azure-1", date: "2026-08-15", cost: 1500, bookedSessions: [] }
+  ],
+  transactions: [
+    { id: "tx-azure-1", eventId: "evt-azure-1", eventTitle: "Microsoft Azure Enterprise Summit 2026", buyerName: "Jonathan Miller", buyerEmail: "jon.m@stripe.com", amount: 1500, status: "Success" as any, date: "2026-07-08 14:32", ticketType: "Azure Executive Pass", invoiceNumber: "INV-AZURE-0091" },
+    { id: "tx-azure-2", eventId: "evt-azure-1", eventTitle: "Microsoft Azure Enterprise Summit 2026", buyerName: "Alice Zhang", buyerEmail: "azhang@notion.so", amount: 450, status: "Success" as any, date: "2026-07-09 09:12", ticketType: "Cloud Architect Pass", invoiceNumber: "INV-AZURE-0092" }
+  ],
+  notifications: [
+    { id: "n-azure-1", title: "Microsoft Entra Verified Sync", description: "Azure AD B2C securely loaded identity context for active sessions.", time: "10 mins ago", type: "success" as any, read: false },
+    { id: "n-azure-2", title: "Azure SQL Connection Pool Active", description: "Enterprise database server instance health is nominal.", time: "1 hour ago", type: "info" as any, read: false }
+  ],
+  auditLogs: [
+    { id: "al-azure-1", timestamp: "2026-07-09 05:41", user: "manishkumarofficial701@gmail.com", action: "Configured Entra External ID Auth Claims Policy", ip: "13.67.12.190", severity: "info" as any },
+    { id: "al-azure-2", timestamp: "2026-07-09 04:12", user: "system@azure-entra.com", action: "Azure Key Vault Rotation Completed for JWT signing certificates", ip: "127.0.0.1", severity: "info" as any }
+  ],
+  vendorBooths: [
+    { id: "v-azure-1", name: "AI hardware Acceleration Lounge", vendorName: "NVIDIA Corp", boothNumber: "Booth A-12", status: "Assigned" as any, itemsOrdered: 4, paymentStatus: "Paid" as any }
+  ],
   settings: {
     webhookUrl: "https://api.acme.com/v1/webhooks/stripe-clearing",
     keyVaultSecretIdentifier: "https://evt-vault.vault.azure.net/secrets/stripe-secret",
@@ -39,9 +118,15 @@ const INITIAL_DB_STATE: AzureDB = {
   }
 };
 
+// In-memory Database Fallback for production resilience
+let localMemoryDB: AzureDB = JSON.parse(JSON.stringify(INITIAL_DB_STATE));
+
 let sqlPool: mssql.ConnectionPool | null = null;
 let connectionError: string | null = null;
 let usingAzureSql = false;
+let isConnecting = false;
+let lastConnectionAttempt = 0;
+const CONNECTION_COOLDOWN_MS = 15000; // Cooldown of 15s to prevent slamming offline databases
 
 // Dynamic helper to fetch current server container's outbound public IP
 async function getCurrentPublicIp(): Promise<string> {
@@ -79,18 +164,28 @@ async function getCurrentPublicIp(): Promise<string> {
 export async function getSqlPool(): Promise<mssql.ConnectionPool | null> {
   if (sqlPool) return sqlPool;
 
-  const connectionString = process.env.AZURE_SQL_CONNECTION_STRING;
-  const server = process.env.AZURE_SQL_SERVER;
-  const database = process.env.AZURE_SQL_DATABASE;
-  const user = process.env.AZURE_SQL_USER;
-  const password = process.env.AZURE_SQL_PASSWORD;
+  const { connectionString, server, database, user, pass: password } = configService.get.azureSql;
 
   // If no credentials configured, we fall back to Emulator
   if (!connectionString && (!server || !database || !user || !password)) {
-    console.log("No Azure SQL Credentials found in environment. Running on Local JSON Database Emulator.");
+    usingAzureSql = false;
+    connectionError = "AZURE_SQL credentials are not configured in environment.";
+    return null;
+  }
+
+  // Cooldown check to prevent endpoint lag when DB is offline
+  const now = Date.now();
+  if (now - lastConnectionAttempt < CONNECTION_COOLDOWN_MS) {
     usingAzureSql = false;
     return null;
   }
+
+  if (isConnecting) {
+    return null;
+  }
+
+  isConnecting = true;
+  lastConnectionAttempt = now;
 
   try {
     const config: string | mssql.config = connectionString
@@ -105,27 +200,34 @@ export async function getSqlPool(): Promise<mssql.ConnectionPool | null> {
             trustServerCertificate: false,
           },
           port: 1433,
-          connectionTimeout: 15000,
+          connectionTimeout: 5000, // 5 seconds connection timeout to avoid blocking startup
+          requestTimeout: 10000,
+          pool: {
+            max: 10,
+            min: 2,
+            idleTimeoutMillis: 30000
+          }
         };
 
-    console.log(`Attempting connection to Microsoft Azure SQL Database [${database || 'Configured via Connection String'}]...`);
+    console.log(`[DATABASE] Attempting connection to Microsoft Azure SQL Database [${database || 'Configured via Connection String'}]...`);
     sqlPool = await mssql.connect(config);
     usingAzureSql = true;
     connectionError = null;
-    console.log("SUCCESS: Active live connection pool established with Microsoft Azure SQL Database!");
+    console.log("[DATABASE] SUCCESS: Active live connection pool established with Microsoft Azure SQL Database!");
     
     // Auto-bootstrap extra tables if missing (like a dedicated Tasks table or schema logs)
     await bootstrapAzureTables(sqlPool);
 
+    isConnecting = false;
     return sqlPool;
   } catch (err: any) {
     let errMsg = err.message || String(err);
-    console.error("CRITICAL: Failed to connect to Azure SQL Database. Falling back to Local Emulator. Reason:", errMsg);
+    console.error("[DATABASE] CRITICAL: Failed to connect to Azure SQL Database. Falling back to In-Memory Emulator. Reason:", errMsg);
     
     try {
       const publicIp = await getCurrentPublicIp();
       if (publicIp) {
-        errMsg += `\n[DIAGNOSTIC DATA]: Your app container's outbound public IP is currently ${publicIp}. Because our Google Cloud Run preview container runs with dynamic outbound IPs, please ensure ${publicIp} is added to your Azure SQL Firewall rules, or configure your Azure SQL server to temporarily accept traffic from all IPs (0.0.0.0 - 255.255.255.255) for testing.`;
+        errMsg += `\n[DIAGNOSTIC DATA]: Your app container's outbound public IP is currently ${publicIp}. Please ensure ${publicIp} is added to your Azure SQL Firewall rules, or configure your Azure SQL server to temporarily accept traffic from all IPs (0.0.0.0 - 255.255.255.255) for testing.`;
       } else {
         errMsg += `\n[DIAGNOSTIC DATA]: Unable to fetch outbound IP, but please ensure your Azure SQL firewall allows traffic from Google Cloud Run IP ranges or contains a 0.0.0.0 - 255.255.255.255 temporary rule for this sandbox environment.`;
       }
@@ -136,6 +238,7 @@ export async function getSqlPool(): Promise<mssql.ConnectionPool | null> {
     connectionError = errMsg;
     sqlPool = null;
     usingAzureSql = false;
+    isConnecting = false;
     return null;
   }
 }
@@ -174,9 +277,9 @@ async function bootstrapAzureTables(pool: mssql.ConnectionPool) {
       )
     `);
 
-    console.log("Azure SQL extra tables bootstrap verified successfully.");
+    console.log("[DATABASE] Azure SQL extra tables bootstrap verified successfully.");
   } catch (err) {
-    console.warn("Bootstrap verification notice (non-fatal):", err);
+    console.warn("[DATABASE] Bootstrap verification notice (non-fatal):", err);
   }
 }
 
@@ -189,32 +292,14 @@ export function getAzureError(): string | null {
 }
 
 // ==========================================
-// LOCAL EMULATOR READ/WRITE OPERATIONS
+// LOCAL EMULATOR IN-MEMORY OPERATIONS
 // ==========================================
 function readLocalDB(): AzureDB {
-  try {
-    if (!fs.existsSync(DB_FILE_PATH)) {
-      fs.writeFileSync(DB_FILE_PATH, JSON.stringify(INITIAL_DB_STATE, null, 2));
-      return INITIAL_DB_STATE;
-    }
-    const content = fs.readFileSync(DB_FILE_PATH, "utf-8");
-    if (!content.trim()) {
-      fs.writeFileSync(DB_FILE_PATH, JSON.stringify(INITIAL_DB_STATE, null, 2));
-      return INITIAL_DB_STATE;
-    }
-    return JSON.parse(content);
-  } catch (error) {
-    console.error("Error reading emulator JSON DB:", error);
-    return INITIAL_DB_STATE;
-  }
+  return localMemoryDB;
 }
 
 function writeLocalDB(data: AzureDB) {
-  try {
-    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error("Error writing to emulator JSON DB:", error);
-  }
+  localMemoryDB = data;
 }
 
 // ==========================================
