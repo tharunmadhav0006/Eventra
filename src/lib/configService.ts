@@ -24,7 +24,7 @@ export interface AppConfig {
 }
 
 function loadConfig(): AppConfig {
-  const port = Number(process.env.PORT) || 3000;
+  const port = Number(process.env.PORT) || 8080;
   const nodeEnv = process.env.NODE_ENV || "development";
   const connectionString = process.env.AZURE_SQL_CONNECTION_STRING;
   const server = process.env.AZURE_SQL_SERVER;
